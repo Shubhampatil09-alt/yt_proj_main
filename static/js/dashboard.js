@@ -293,8 +293,14 @@ function renderDiagnosticResults(result, diagnostic) {
 
 function renderChannels(items) {
   channelCache = items;
-  $("channelResults").innerHTML = items.length ? items.map(channel => `<div class="channel-result ${selectedChannel?.channel_id === channel.channel_id ? "selected" : ""}" data-channel="${channel.channel_id}">
-    <img src="${escapeHtml(channel.thumbnail_url || "")}" alt=""><div><strong>${escapeHtml(channel.title)}</strong><small>${escapeHtml(channel.channel_id)} - ${compactNumber(channel.subscriber_count)} subscribers</small></div><button type="button">Videos</button></div>`).join("") : '<div class="empty-state compact">No matching channels found.</div>';
+  $("channelResults").innerHTML = items.length ? items.map(channel => {
+    const visual = channel.thumbnail_url
+      ? `<img src="${escapeHtml(channel.thumbnail_url)}" alt="">`
+      : `<div class="channel-avatar" aria-hidden="true">${escapeHtml((channel.title || "C").slice(0, 1).toUpperCase())}</div>`;
+    const subscribers = channel.subscriber_count == null ? "Saved channel" : `${compactNumber(channel.subscriber_count)} subscribers`;
+    return `<div class="channel-result ${selectedChannel?.channel_id === channel.channel_id ? "selected" : ""}" data-channel="${channel.channel_id}">
+      ${visual}<div><strong>${escapeHtml(channel.title)}</strong><small>${escapeHtml(channel.channel_id)} - ${subscribers}</small></div><button type="button">Videos</button></div>`;
+  }).join("") : '<div class="empty-state compact">No matching channels found.</div>';
   document.querySelectorAll(".channel-result").forEach(item => item.addEventListener("click", () => loadVideos(item.dataset.channel)));
 }
 
@@ -356,11 +362,33 @@ async function selectVideo(videoId) {
   } catch (error) { showToast(error.message, true); }
 }
 
-function changeVideo() {
+async function changeVideo() {
+  if (changingVideo) {
+    $("videoResults").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    return;
+  }
   changingVideo = true;
   $("discoveryArea").classList.remove("collapsed");
   renderWorkflow(latestYoutube.selection, latestYoutube.diagnostic || {}, latestYoutube.latest_result);
-  $("channelQuery").focus();
+  const selection = latestYoutube.selection;
+  if (selection?.channel_id) {
+    let channel = channelCache.find(item => item.channel_id === selection.channel_id);
+    if (!channel) {
+      channel = {
+        channel_id: selection.channel_id,
+        title: selection.channel_title || "Selected channel",
+        thumbnail_url: null,
+        subscriber_count: null
+      };
+      channelCache = [channel];
+    }
+    selectedChannel = channel;
+    $("channelQuery").value = selection.channel_title || selection.channel_id;
+    renderChannels(channelCache);
+    await loadVideos(selection.channel_id);
+  } else {
+    $("channelQuery").focus();
+  }
   $("discoveryArea").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
@@ -383,6 +411,7 @@ function updateControls() {
       : eligibility.reason;
   const startButton = $("startDiagnostic");
   const stopButton = $("stopDiagnostic");
+  const changeButton = $("changeVideo");
   startButton.disabled = diagnosticBlocked;
   startButton.textContent = diagnosticActive
     ? `Diagnostic ${latestYoutube.diagnostic.status}`
@@ -404,6 +433,10 @@ function updateControls() {
   reasonElement.classList.toggle("status", reasonPrefix === "Status");
   stopButton.disabled = globalBusy || !diagnosticActive || latestYoutube.diagnostic?.status === "Stopping";
   stopButton.title = diagnosticActive ? "Stop the active diagnostic" : "No diagnostic is currently active.";
+  changeButton.disabled = globalBusy || diagnosticActive || changingVideo || !latestYoutube.selection;
+  changeButton.title = diagnosticActive
+    ? "Stop the active diagnostic before changing the video."
+    : "Load more videos from the selected channel.";
 }
 
 function showToast(message, error = false) {

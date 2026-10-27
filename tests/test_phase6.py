@@ -69,8 +69,8 @@ def test_dashboard_contains_complete_selection_and_diagnostic_workflow(tmp_path)
     assert page.status_code == 200
     for label in ("Search Channel", "Select Video", "Run Diagnostic", "View Results"):
         assert label in page.text
-    assert "/static/css/dashboard.css?v=6.0.11" in page.text
-    assert "/static/js/dashboard.js?v=6.0.11" in page.text
+    assert "/static/css/dashboard.css?v=6.0.12" in page.text
+    assert "/static/js/dashboard.js?v=6.0.12" in page.text
     for element_id in (
         'id="selectedVideo"', 'id="changeVideo"', 'id="startDiagnostic"',
         'id="diagnosticReason"', 'id="diagnosticResults"', 'id="loadMoreVideos"',
@@ -80,7 +80,9 @@ def test_dashboard_contains_complete_selection_and_diagnostic_workflow(tmp_path)
     script = (Path(__file__).parents[1] / "static" / "js" / "dashboard.js").read_text(
         encoding="utf-8"
     )
-    assert "function changeVideo()" in script
+    assert "async function changeVideo()" in script
+    assert "await loadVideos(selection.channel_id)" in script
+    assert '$("channelQuery").value = selection.channel_title || selection.channel_id' in script
     assert "renderDiagnosticResults" in script
     assert "eligibility.reason" in script
     assert 'document.addEventListener("visibilitychange"' in script

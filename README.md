@@ -47,7 +47,7 @@ Nothing starts on application launch or video selection. **Start Bot** plays the
 - Each Start or Restart creates a fresh Selenium execution while keeping the same bot identity
 - Removal requires confirmation, is allowed only while fully stopped, and retains all historical runs
 - Thread-safe, idempotent lifecycle controls and duplicate-start protection
-- Default safety policy: block starts at 84% RAM, gracefully stop at 95%, and require 1.0 GB available RAM
+- Default safety policy: block starts at 90% RAM, gracefully stop at 95%, and require 1.0 GB available RAM
 - Safety hysteresis prevents rapid lock/unlock behavior near resource limits
 - CSV and Excel reports include stable bot ID and bot name for new runs; legacy rows remain readable
 
@@ -147,7 +147,7 @@ Set these variables in the same PowerShell window before `python main.py`:
 ```powershell
 $env:PLAYBACK_TARGET_WORKERS = "1"
 $env:PLAYBACK_MAX_WORKERS = "1"
-$env:PLAYBACK_RAM_START_PERCENT = "84"
+$env:PLAYBACK_RAM_START_PERCENT = "90"
 $env:PLAYBACK_RAM_SHUTDOWN_PERCENT = "95"
 $env:PLAYBACK_MIN_AVAILABLE_RAM_GB = "1.0"
 $env:PLAYBACK_SAFETY_HYSTERESIS_PERCENT = "5"
@@ -166,7 +166,7 @@ $env:RESOURCE_BATCH_SIZE = "15"
 python main.py
 ```
 
-The defaults are 84% RAM start blocking, 95% graceful shutdown, 1.0 GB minimum available RAM, 90% CPU for five samples, and one concurrent browser. Use **Increase limit** for each explicit runtime increase; the backend performs the same resource safety check first.
+The defaults are 90% RAM start blocking, 95% graceful shutdown, 1.0 GB minimum available RAM, 90% CPU for five samples, and one concurrent browser. Use **Increase limit** for each explicit runtime increase; the backend performs the same resource safety check first.
 
 Set `PLAYBACK_HEADLESS=false` when you want to watch the Chrome windows during manual testing. Visible windows consume more resources.
 

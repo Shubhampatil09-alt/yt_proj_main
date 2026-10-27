@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import inspect
-import math
 import time
 import uuid
 from threading import RLock
@@ -356,12 +355,6 @@ class WorkerManager:
             raise ValueError(f"Worker start blocked: RAM is {ram:.1f}% (limit {RAM_START_BLOCK_PERCENT:.0f}%).")
         if available < MIN_AVAILABLE_RAM_GB:
             raise ValueError(f"Worker start blocked: {available:.2f} GB RAM is available; at least {MIN_AVAILABLE_RAM_GB:.2f} GB is required.")
-        if self._memory_capacity_unlocked() < 1:
-            raise ValueError(
-                f"Memory limit reached: another bot needs about {self._ram_estimate_mb:.0f} MB, which would "
-                f"exceed the {RAM_START_BLOCK_PERCENT:.0f}% RAM limit or leave less than "
-                f"{MIN_AVAILABLE_RAM_GB:.2f} GB free. Can't start more bots."
-            )
 
     def _observe_memory_unlocked(self, memory_mb: float) -> None:
         # The estimate only grows: Chrome's footprint rises during playback, so the peak is the safe value.
@@ -369,25 +362,16 @@ class WorkerManager:
             self._ram_estimate_mb = memory_mb
 
     def _memory_capacity_unlocked(self) -> int:
-        """How many more bots fit before the start-block RAM limit or the free-RAM floor."""
+        """Whether current memory satisfies the configured pre-start limits.
+
+        Browser memory remains observable, but does not impose an additional hidden
+        projected threshold. Every explicit start is checked again against current
+        RAM and available memory, and production remains limited to one browser.
+        """
         memory = self.metrics_provider.virtual_memory()
-        total_mb = float(memory.total) / 1024**2
-        available_mb = float(memory.available) / 1024**2
-        estimate = self._ram_estimate_mb
-        # Browsers that are still starting have not allocated their full footprint yet.
-        pending = 0.0
-        for worker in self._current.values():
-            if worker.status in WorkerStatus.active():
-                used = float(worker.snapshot().get("process", {}).get("memory_mb", 0.0) or 0.0)
-                pending += max(0.0, estimate - used)
-        if self._external_slots:
-            pending += max(0.0, estimate - self._external_memory_mb)
-        headroom_percent = total_mb * RAM_START_BLOCK_PERCENT / 100 - (total_mb - available_mb + pending)
-        headroom_available = available_mb - pending - MIN_AVAILABLE_RAM_GB * 1024
-        # Projected RAM must stay strictly below the start limit; the free-RAM floor may be met exactly.
-        by_percent = math.ceil(headroom_percent / estimate) - 1
-        by_available = math.floor(headroom_available / estimate)
-        return max(0, min(by_percent, by_available))
+        ram = float(memory.percent)
+        available = float(memory.available) / 1024**3
+        return int(ram < RAM_START_BLOCK_PERCENT and available >= MIN_AVAILABLE_RAM_GB)
 
     def _capacity_unlocked(self) -> dict:
         memory_bots = self._memory_capacity_unlocked()

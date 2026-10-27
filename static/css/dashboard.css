@@ -99,6 +99,7 @@ h1 span { color: var(--cyan); }
 .channel-result { display: grid; grid-template-columns: 42px 1fr auto; align-items: center; gap: 10px; padding: 9px; border: 1px solid var(--border); border-radius: 10px; background: rgba(5,8,14,.38); cursor: pointer; }
 .channel-result:hover,.channel-result.selected { border-color: rgba(85,152,255,.42); background: rgba(85,152,255,.06); }
 .channel-result img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #090d16; }
+.channel-avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: rgba(85,152,255,.12); color: var(--blue); font-size: 16px; font-weight: 800; }
 .channel-result strong,.video-result strong { display: block; overflow: hidden; color: var(--text); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .channel-result small,.video-result small { color: var(--muted); font-size: 9px; }
 .channel-result button,.video-result button { border: 0; background: transparent; color: var(--blue); cursor: pointer; font: inherit; font-size: 10px; }
