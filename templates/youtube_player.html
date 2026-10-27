@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>YouTube playback diagnostic</title>
+  <style>body{margin:0;background:#080b12;color:#eaf1ff;font:16px system-ui}main{max-width:960px;margin:24px auto;padding:16px}iframe{width:100%;aspect-ratio:16/9;border:0}p{padding:8px}</style>
+  <script src="{{ url_for('static', path='/js/youtube-player.js') }}?v=1" defer></script>
+</head>
+<body><main>
+  <h1>YouTube playback diagnostic</h1>
+  <div id="playerContainer" data-video-id="{{ video_id }}"></div>
+  <p id="playerStatus" role="status">Loading YouTube player…</p>
+</main></body>
+</html>

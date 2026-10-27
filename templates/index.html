@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bot Control Center</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=6.0.5">
+  <script src="{{ url_for('static', path='/js/chart.umd.min.js') }}?v=6.0.5" defer></script>
+  <script src="{{ url_for('static', path='/js/dashboard.js') }}?v=6.0.5" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow"><span class="live-dot"></span> Local test environment</div>
+        <h1>Bot Control <span>Center</span></h1>
+        <p>Saved bots play the selected YouTube video once, with resource safety checks.</p>
+      </div>
+      <div class="header-actions">
+        <a class="nav-link" href="/analytics">Analytics &amp; Reports</a>
+        <div class="connection" id="connectionStatus">Connecting...</div>
+      </div>
+    </header>
+
+    <section class="metrics-grid" aria-label="System summary">
+      <article class="metric-card featured"><div class="metric-label">Saved bots</div><strong id="savedBots">0</strong><small>Persistent across restarts</small></article>
+      <article class="metric-card"><div class="metric-label">Running bots</div><strong id="runningBots">0</strong><small class="good">Managed Chrome sessions</small></article>
+      <article class="metric-card"><div class="metric-label">Stopped bots</div><strong id="stoppedBots">0</strong><small>Ready for a fresh run</small></article>
+      <article class="metric-card"><div class="metric-label">Failed bots</div><strong id="failedBots">0</strong><small class="bad">Needs attention</small></article>
+      <article class="metric-card"><div class="metric-label">CPU load</div><strong><span id="cpuMetric">--</span><em>%</em></strong><div class="bar"><i id="cpuBar"></i></div></article>
+      <article class="metric-card"><div class="metric-label">Memory</div><strong><span id="ramMetric">--</span><em>%</em></strong><small id="ramDetail">Reading system memory...</small></article>
+      <article class="metric-card"><div class="metric-label">Completed</div><strong id="completedMetric">0</strong><small class="good">Successful tests</small></article>
+      <article class="metric-card"><div class="metric-label">Dashboard uptime</div><strong class="uptime" id="uptimeMetric">00:00:00</strong><small>Current local session</small></article>
+    </section>
+
+    <section class="chart-grid">
+      <article class="panel chart-panel"><div class="panel-heading"><div><span>CPU</span><h2>Processor activity</h2></div><div class="legend cpu">Live</div></div><div class="chart-wrap"><canvas id="cpuChart"></canvas></div></article>
+      <article class="panel chart-panel"><div class="panel-heading"><div><span>RAM</span><h2>Memory pressure</h2></div><div class="legend ram">Live</div></div><div class="chart-wrap"><canvas id="ramChart"></canvas></div></article>
+    </section>
+
+    <section class="panel youtube-panel">
+      <div class="panel-heading youtube-heading">
+        <div><span>Official Data API v3</span><h2>YouTube channel search</h2></div>
+        <span class="integration-badge" id="youtubeConfig">Checking configuration</span>
+      </div>
+      <p class="section-note">Select a video, then press Start on a saved bot. One YouTube session runs at a time, without automatic repeats.</p>
+      <ol class="workflow-steps" id="workflowSteps" aria-label="YouTube diagnostic workflow">
+        <li data-step="search"><b>1</b><span>Search Channel</span></li>
+        <li data-step="select"><b>2</b><span>Select Video</span></li>
+        <li data-step="diagnostic"><b>3</b><span>Run Diagnostic</span></li>
+        <li data-step="results"><b>4</b><span>View Results</span></li>
+      </ol>
+      <div id="discoveryArea">
+        <form class="youtube-search" id="youtubeSearchForm">
+          <input id="channelQuery" maxlength="200" placeholder="Channel name, @handle, or youtube.com channel URL" autocomplete="off" required>
+          <button type="submit" id="searchChannels">Search channels</button>
+        </form>
+        <div class="youtube-layout">
+          <div>
+            <h3 class="subheading">Channels</h3>
+            <div class="channel-results" id="channelResults"><div class="empty-state compact">Search for a channel to begin.</div></div>
+          </div>
+          <div>
+            <h3 class="subheading" id="videoHeading">Channel videos</h3>
+            <div class="video-results" id="videoResults"><div class="empty-state compact">Select a channel to load its public uploads.</div></div>
+            <button class="load-more hidden" type="button" id="loadMoreVideos">Load more videos</button>
+          </div>
+        </div>
+      </div>
+      <div class="selected-video" id="selectedVideo">
+        <div id="selectedVideoDetails"><div class="empty-state compact">No target video selected.</div></div>
+        <div class="diagnostic-cta">
+          <button class="run-diagnostic" id="startDiagnostic">Watch Selected Video</button>
+          <button class="action-button stop" id="stopDiagnostic">Stop</button>
+          <p class="disabled-reason" id="diagnosticReason" role="status" aria-live="polite">Select and save a video first.</p>
+        </div>
+      </div>
+      <div class="selection-toolbar hidden" id="selectionToolbar">
+        <button class="text-button" type="button" id="changeVideo">Change Video</button>
+      </div>
+      <div class="diagnostic-live" id="diagnosticLive">
+        <div><span>State</span><strong id="diagnosticState">Idle</strong></div>
+        <div><span>Elapsed</span><strong id="diagnosticElapsed">00:00:00</strong></div>
+        <div><span>Browser RAM</span><strong id="diagnosticMemory">0.0 MB</strong></div>
+        <div><span>Browser</span><strong id="diagnosticBrowser">Closed</strong></div>
+        <div><span>Playback</span><strong id="diagnosticPlayback">Not started</strong></div>
+      </div>
+      <div class="diagnostic-error hidden" id="diagnosticError"></div>
+      <div class="diagnostic-results hidden" id="diagnosticResults"></div>
+    </section>
+
+    <section class="detail-grid">
+      <article class="panel workers-panel">
+        <div class="panel-heading">
+          <div><span>Profiles</span><h2>Manage bots</h2></div>
+          <div class="pool-actions">
+            <span class="count-pill" id="workerPill">0 / 2 active</span>
+            <button class="action-button add" id="addBot">+ Add Bot</button>
+            <button class="action-button start" id="startAll">Start One Bot</button>
+            <button class="action-button stop" id="stopAll">Stop All</button>
+            <button class="text-button" id="increaseLimit">Increase limit</button>
+          </div>
+        </div>
+        <div class="bot-list" id="botList"></div>
+        <div class="empty-state hidden" id="workerEmpty">No saved bots. Add one to begin.</div>
+      </article>
+
+      <article class="panel alerts-panel">
+        <div class="panel-heading"><div><span>Guardrails</span><h2>Safety alerts</h2></div></div>
+        <div id="alerts" class="alerts"></div>
+        <div class="thresholds">
+          <div><span>RAM start block</span><strong>84%</strong></div>
+          <div><span>Worker shutdown</span><strong>95%</strong></div>
+          <div><span>Minimum available</span><strong>1.0 GB</strong></div>
+          <div><span>Sustained CPU</span><strong>90% / 5 samples</strong></div>
+        </div>
+        <div class="resource-breakdown">
+          <div><span>System RAM</span><strong id="systemRamBreakdown">--</strong></div>
+          <div><span>FastAPI process</span><strong id="backendRamBreakdown">--</strong></div>
+          <div><span>Managed Chrome</span><strong id="chromeRamBreakdown">--</strong></div>
+          <div><span>ChromeDriver</span><strong id="driverRamBreakdown">--</strong></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel logs-panel">
+      <div class="panel-heading"><div><span>Events</span><h2>Activity log</h2></div><button class="text-button" id="refreshButton">Refresh</button></div>
+      <div id="activityLogs" class="logs"></div>
+    </section>
+    <footer>Local-only Selenium playback lab &middot; Bound to 127.0.0.1 &middot; Local test media only</footer>
+  </main>
+
+  <dialog id="botDialog">
+    <form method="dialog" id="botForm">
+      <div class="dialog-head"><h2>Add saved bot</h2><button value="cancel" aria-label="Close">&times;</button></div>
+      <label for="botName">Display name</label>
+      <input id="botName" maxlength="80" placeholder="Bot 003" autocomplete="off">
+      <p>Browsers never start automatically. The profile remains after a backend restart.</p>
+      <div class="dialog-actions"><button value="cancel">Cancel</button><button class="primary" id="saveBot" value="default">Create bot</button></div>
+    </form>
+  </dialog>
+  <dialog id="removeDialog">
+    <form method="dialog">
+      <h2>Remove saved bot?</h2>
+      <p id="removeMessage">The profile will be removed. Historical runs will be retained.</p>
+      <div class="dialog-actions"><button value="cancel">Cancel</button><button class="danger-button" id="confirmRemove" value="default">Remove bot</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+</body>
+</html>

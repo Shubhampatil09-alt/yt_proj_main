@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Playback Fixture</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #080b12; color: #eaf1ff; font: 16px system-ui; }
+    main { width: min(760px, 92vw); }
+    video { width: 100%; border: 1px solid #253249; border-radius: 14px; background: #000; }
+    p { color: #8996ad; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Local HTML5 playback fixture</h1>
+    <video id="testVideo" preload="auto" muted playsinline>
+      <source src="{{ url_for('static', path='/media/test-video.mp4') }}" type="video/mp4">
+    </video>
+    <p>This page and its media are served only by the local FastAPI application.</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analytics &amp; Reports · Playback Lab</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=6.0.4">
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/analytics.css') }}?v=6.0.4">
+  <script src="{{ url_for('static', path='/js/chart.umd.min.js') }}?v=6.0.4" defer></script>
+  <script src="{{ url_for('static', path='/js/analytics.js') }}?v=6.0.4" defer></script>
+</head>
+<body>
+  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+  <main class="shell analytics-shell">
+    <header class="topbar">
+      <div><div class="eyebrow"><span class="live-dot"></span> Stored local telemetry</div>
+        <h1>Analytics <span>&amp; Reports</span></h1>
+        <p>Execution outcomes and resource history calculated from SQLite records.</p>
+      </div>
+      <a class="nav-link" href="/">← Live dashboard</a>
+    </header>
+
+    <section class="panel filter-panel">
+      <div class="filter-grid">
+        <label>From<input type="datetime-local" id="filterStart"></label>
+        <label>To<input type="datetime-local" id="filterEnd"></label>
+        <label>Session<select id="filterSession"><option value="">All sessions</option></select></label>
+        <label>Worker<input type="number" min="1" id="filterWorker" placeholder="All workers"></label>
+        <label>Status<select id="filterStatus"><option value="">All statuses</option><option>completed</option><option>failed</option><option>stopped</option><option>safety_stopped</option></select></label>
+        <div class="filter-actions"><button id="applyFilters" class="action-button start">Apply</button><button id="clearFilters" class="action-button">Clear</button></div>
+      </div>
+      <div class="export-actions"><span id="resultContext">All stored data</span><button id="exportCsv" class="action-button">Export CSV</button><button id="exportXlsx" class="action-button">Export Excel</button></div>
+    </section>
+
+    <section class="analytics-metrics" id="summaryCards">
+      <article class="metric-card"><div class="metric-label">Total runs</div><strong id="totalRuns">0</strong></article>
+      <article class="metric-card"><div class="metric-label">Successful</div><strong id="successfulRuns">0</strong></article>
+      <article class="metric-card"><div class="metric-label">Failed</div><strong id="failedRuns">0</strong></article>
+      <article class="metric-card"><div class="metric-label">Success rate</div><strong><span id="successRate">0</span><em>%</em></strong></article>
+      <article class="metric-card"><div class="metric-label">Average duration</div><strong><span id="averageDuration">0</span><em>s</em></strong></article>
+      <article class="metric-card"><div class="metric-label">Maximum duration</div><strong><span id="maximumDuration">0</span><em>s</em></strong></article>
+      <article class="metric-card"><div class="metric-label">Peak CPU</div><strong><span id="peakCpu">0</span><em>%</em></strong></article>
+      <article class="metric-card"><div class="metric-label">Peak RAM</div><strong><span id="peakRam">0</span><em>%</em></strong></article>
+      <article class="metric-card"><div class="metric-label">Peak worker RAM</div><strong><span id="peakWorkerRam">0</span><em>MB</em></strong></article>
+      <article class="metric-card"><div class="metric-label">Safety stops</div><strong id="safetyStops">0</strong></article>
+    </section>
+
+    <section class="chart-grid analytics-charts">
+      <article class="panel chart-panel"><div class="panel-heading"><div><span>History</span><h2>System CPU &amp; RAM</h2></div></div><div class="chart-wrap"><canvas id="resourceChart"></canvas></div></article>
+      <article class="panel chart-panel"><div class="panel-heading"><div><span>History</span><h2>Managed worker RAM</h2></div></div><div class="chart-wrap"><canvas id="workerRamChart"></canvas></div></article>
+    </section>
+
+    <section class="panel history-panel">
+      <div class="panel-heading"><div><span>Executions</span><h2>Test-run history</h2></div><span class="count-pill" id="runCount">0 records</span></div>
+      <div class="table-wrap analytics-table"><table><thead><tr>
+        <th data-sort="started_at">Started</th><th data-sort="worker_id">Worker</th><th data-sort="status">Status</th><th data-sort="duration">Duration</th><th data-sort="progress">Progress</th><th>Stop reason</th><th>Error</th><th></th>
+      </tr></thead><tbody id="runRows"></tbody></table><div class="empty-state hidden" id="runsEmpty">No runs match these filters.</div></div>
+      <div class="pagination"><button id="previousPage" class="action-button">Previous</button><span id="pageLabel">Page 1</span><button id="nextPage" class="action-button">Next</button></div>
+    </section>
+    <section class="panel history-panel">
+      <div class="panel-heading"><h2>YouTube diagnostic history</h2></div>
+      <p>Latest 100 manual diagnostics across all videos and sessions, independent of worker filters.</p>
+      <div class="table-wrap analytics-table"><table><thead><tr><th>Started</th><th>Video</th><th>Status</th><th>Elapsed</th><th>Playback</th><th>Browser RAM</th><th>Cleanup</th><th>Stop reason / Error</th></tr></thead><tbody id="diagnosticRows"></tbody></table></div>
+    </section>
+  </main>
+
+  <dialog id="runDialog"><button class="dialog-close" id="closeDialog">×</button><div class="eyebrow">Execution detail</div><h2 id="detailTitle">Run</h2><div id="runDetail"></div></dialog>
+  <div id="toast" class="toast" role="status"></div>
+</body>
+</html>
