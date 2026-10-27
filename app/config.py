@@ -45,3 +45,12 @@ PLAYBACK_URL = f"http://{HOST}:{PORT}/playback-test"
 YOUTUBE_API_KEY = read_youtube_api_key()
 YOUTUBE_API_TIMEOUT_SECONDS = float(os.getenv("YOUTUBE_API_TIMEOUT_SECONDS", "10"))
 YOUTUBE_MAX_RESULTS = max(1, min(50, int(os.getenv("YOUTUBE_MAX_RESULTS", "24"))))
+"""
+cd "D:\Project\Youtube_auto\Yt_project\youtube\_bot"
+.\start_app.bat
+
+cd "D:\Project\Youtube_auto\Yt_project\youtube\_bot"
+.\start_app.bat
+AIzaSyCQyMdJQcqydHaN1SR3wWAIIy_HJ4O4_48[Environment]::GetEnvironmentVariable("YOUTUBE_API_KEY", "User")
+    
+"""
