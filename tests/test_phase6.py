@@ -69,8 +69,8 @@ def test_dashboard_contains_complete_selection_and_diagnostic_workflow(tmp_path)
     assert page.status_code == 200
     for label in ("Search Channel", "Select Video", "Run Diagnostic", "View Results"):
         assert label in page.text
-    assert "/static/css/dashboard.css?v=6.0.6" in page.text
-    assert "/static/js/dashboard.js?v=6.0.6" in page.text
+    assert "/static/css/dashboard.css?v=6.0.7" in page.text
+    assert "/static/js/dashboard.js?v=6.0.7" in page.text
     for element_id in (
         'id="selectedVideo"', 'id="changeVideo"', 'id="startDiagnostic"',
         'id="diagnosticReason"', 'id="diagnosticResults"', 'id="loadMoreVideos"',
@@ -85,6 +85,35 @@ def test_dashboard_contains_complete_selection_and_diagnostic_workflow(tmp_path)
     assert "eligibility.reason" in script
     assert 'document.addEventListener("visibilitychange"' in script
     assert "refreshInFlight" in script
+
+
+def test_resource_guardrails_are_rendered_in_cpu_and_ram_panels(tmp_path):
+    app = create_app(
+        tmp_path / "resource-panels.db",
+        metrics_provider=FakeMetrics(),
+        worker_factory=lambda worker_id: FakeWorker(worker_id),
+        auto_start=False,
+    )
+    with TestClient(app) as client:
+        page = client.get("/")
+
+    assert page.status_code == 200
+    for element_id in (
+        'id="cpuSafetyAlert"', 'id="cpuThreshold"', 'id="cpuSampleProgress"',
+        'id="ramSafetyAlert"', 'id="ramStartThreshold"',
+        'id="ramShutdownThreshold"', 'id="minimumAvailableRam"',
+        'id="systemRamBreakdown"', 'id="backendRamBreakdown"',
+        'id="chromeRamBreakdown"', 'id="driverRamBreakdown"',
+    ):
+        assert element_id in page.text
+    assert "Safety alerts" not in page.text
+
+    script = (Path(__file__).parents[1] / "static" / "js" / "dashboard.js").read_text(
+        encoding="utf-8"
+    )
+    assert "function renderResourceSafety(data)" in script
+    assert "thresholds.ram_start_block" in script
+    assert "thresholds.cpu_sustained" in script
 
 
 def test_channel_video_pagination_preserves_next_page_token():

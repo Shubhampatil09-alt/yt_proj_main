@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bot Control Center</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=6.0.6">
-  <script src="{{ url_for('static', path='/js/chart.umd.min.js') }}?v=6.0.6" defer></script>
-  <script src="{{ url_for('static', path='/js/dashboard.js') }}?v=6.0.6" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=6.0.7">
+  <script src="{{ url_for('static', path='/js/chart.umd.min.js') }}?v=6.0.7" defer></script>
+  <script src="{{ url_for('static', path='/js/dashboard.js') }}?v=6.0.7" defer></script>
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -35,8 +35,32 @@
     </section>
 
     <section class="chart-grid">
-      <article class="panel chart-panel"><div class="panel-heading"><div><span>CPU</span><h2>Processor activity</h2></div><div class="legend cpu">Live</div></div><div class="chart-wrap"><canvas id="cpuChart"></canvas></div></article>
-      <article class="panel chart-panel"><div class="panel-heading"><div><span>RAM</span><h2>Memory pressure</h2></div><div class="legend ram">Live</div></div><div class="chart-wrap"><canvas id="ramChart"></canvas></div></article>
+      <article class="panel chart-panel resource-panel">
+        <div class="panel-heading"><div><span>CPU</span><h2>Processor activity</h2></div><div class="legend cpu">Live</div></div>
+        <div class="resource-alert alert safe" id="cpuSafetyAlert" role="status" aria-live="polite">Reading CPU safety status...</div>
+        <div class="chart-wrap"><canvas id="cpuChart"></canvas></div>
+        <div class="resource-details" aria-label="CPU guardrails">
+          <div><span>Current load</span><strong id="cpuPanelCurrent">--</strong></div>
+          <div><span>Sustained protection</span><strong id="cpuThreshold">--</strong></div>
+          <div><span>High-load samples</span><strong id="cpuSampleProgress">--</strong></div>
+          <div><span>Protection state</span><strong id="cpuProtectionState">Checking</strong></div>
+        </div>
+      </article>
+      <article class="panel chart-panel resource-panel">
+        <div class="panel-heading"><div><span>RAM</span><h2>Memory pressure</h2></div><div class="legend ram">Live</div></div>
+        <div class="resource-alert alert safe" id="ramSafetyAlert" role="status" aria-live="polite">Reading RAM safety status...</div>
+        <div class="chart-wrap"><canvas id="ramChart"></canvas></div>
+        <div class="resource-details ram-details" aria-label="RAM guardrails and process usage">
+          <div><span>System RAM</span><strong id="systemRamBreakdown">--</strong></div>
+          <div><span>Available RAM</span><strong id="availableRamBreakdown">--</strong></div>
+          <div><span>Start block</span><strong id="ramStartThreshold">--</strong></div>
+          <div><span>Worker shutdown</span><strong id="ramShutdownThreshold">--</strong></div>
+          <div><span>Minimum available</span><strong id="minimumAvailableRam">--</strong></div>
+          <div><span>FastAPI process</span><strong id="backendRamBreakdown">--</strong></div>
+          <div><span>Managed Chrome</span><strong id="chromeRamBreakdown">--</strong></div>
+          <div><span>ChromeDriver</span><strong id="driverRamBreakdown">--</strong></div>
+        </div>
+      </article>
     </section>
 
     <section class="panel youtube-panel">
@@ -105,23 +129,6 @@
         <div class="alert safe" id="botCapacity" role="status">Checking memory capacity...</div>
         <div class="bot-list" id="botList"></div>
         <div class="empty-state hidden" id="workerEmpty">No saved bots. Add one to begin.</div>
-      </article>
-
-      <article class="panel alerts-panel">
-        <div class="panel-heading"><div><span>Guardrails</span><h2>Safety alerts</h2></div></div>
-        <div id="alerts" class="alerts"></div>
-        <div class="thresholds">
-          <div><span>RAM start block</span><strong>84%</strong></div>
-          <div><span>Worker shutdown</span><strong>95%</strong></div>
-          <div><span>Minimum available</span><strong>1.0 GB</strong></div>
-          <div><span>Sustained CPU</span><strong>90% / 5 samples</strong></div>
-        </div>
-        <div class="resource-breakdown">
-          <div><span>System RAM</span><strong id="systemRamBreakdown">--</strong></div>
-          <div><span>FastAPI process</span><strong id="backendRamBreakdown">--</strong></div>
-          <div><span>Managed Chrome</span><strong id="chromeRamBreakdown">--</strong></div>
-          <div><span>ChromeDriver</span><strong id="driverRamBreakdown">--</strong></div>
-        </div>
       </article>
     </section>
 

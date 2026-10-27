@@ -65,16 +65,24 @@ class DashboardService:
             len(self.cpu_samples) == CPU_SUSTAINED_SAMPLES
             and all(value >= CPU_SUSTAINED_PERCENT for value in self.cpu_samples)
         )
+        cpu_high_samples = 0
+        for value in reversed(self.cpu_samples):
+            if value < CPU_SUSTAINED_PERCENT:
+                break
+            cpu_high_samples += 1
 
         reason = None
+        safety_source = None
         stop_workers = False
         if ram >= RAM_SHUTDOWN_PERCENT:
+            safety_source = "ram"
             reason = (
                 f"Safety shutdown: RAM is {ram:.1f}% "
                 f"(shutdown threshold {RAM_SHUTDOWN_PERCENT:.0f}%)."
             )
             stop_workers = True
         elif sustained_cpu:
+            safety_source = "cpu"
             reason = (
                 f"Safety shutdown: CPU remained above {CPU_SUSTAINED_PERCENT:.0f}% "
                 f"for {CPU_SUSTAINED_SAMPLES} samples."
@@ -87,13 +95,16 @@ class DashboardService:
                 and cpu < CPU_SUSTAINED_PERCENT
             )
             if not recovered:
+                safety_source = "recovery"
                 reason = "Safety recovery lock: waiting for CPU and RAM hysteresis margins."
         elif ram >= RAM_START_BLOCK_PERCENT:
+            safety_source = "ram"
             reason = (
                 f"Worker starts blocked: RAM is {ram:.1f}% "
                 f"(start limit {RAM_START_BLOCK_PERCENT:.0f}%)."
             )
         elif available_ram_gb < MIN_AVAILABLE_RAM_GB:
+            safety_source = "ram"
             reason = (
                 f"Worker starts blocked: only {available_ram_gb:.2f} GB RAM is available "
                 f"(minimum {MIN_AVAILABLE_RAM_GB:.2f} GB)."
@@ -155,6 +166,9 @@ class DashboardService:
             "safety_shutdown": stop_workers,
             "start_blocked": reason is not None,
             "cpu_sustained": sustained_cpu,
+            "cpu_high_samples": cpu_high_samples,
+            "safety_reason": reason,
+            "safety_source": safety_source,
             "thresholds": {
                 "ram_start_block": RAM_START_BLOCK_PERCENT,
                 "ram_shutdown": RAM_SHUTDOWN_PERCENT,

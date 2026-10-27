@@ -68,6 +68,59 @@ function formatDuration(seconds) {
   return `${hours}:${minutes}:${secs}`;
 }
 
+function setResourceAlert(id, level, message) {
+  const alert = $(id);
+  alert.className = `resource-alert alert ${level}`;
+  alert.textContent = message;
+}
+
+function renderResourceSafety(data) {
+  const thresholds = data.thresholds || {};
+  const cpuLimit = Number(thresholds.cpu_sustained ?? 90);
+  const requiredSamples = Number(thresholds.cpu_samples ?? 5);
+  const ramStart = Number(thresholds.ram_start_block ?? 70);
+  const ramShutdown = Number(thresholds.ram_shutdown ?? 80);
+  const minimumAvailable = Number(thresholds.minimum_available_ram_gb ?? 1.5);
+  const cpu = Number(data.cpu_percent || 0);
+  const ram = Number(data.ram_percent || 0);
+  const available = Number(data.ram_available_gb || 0);
+  const observedCpuSamples = Number(data.cpu_high_samples || 0);
+
+  $("cpuPanelCurrent").textContent = `${cpu.toFixed(1)}%`;
+  $("cpuThreshold").textContent = `${cpuLimit.toFixed(0)}% / ${requiredSamples} samples`;
+  $("cpuSampleProgress").textContent = `${Math.min(observedCpuSamples, requiredSamples)} / ${requiredSamples}`;
+  $("ramStartThreshold").textContent = `${ramStart.toFixed(0)}%`;
+  $("ramShutdownThreshold").textContent = `${ramShutdown.toFixed(0)}%`;
+  $("minimumAvailableRam").textContent = `${minimumAvailable.toFixed(1)} GB`;
+  $("availableRamBreakdown").textContent = `${available.toFixed(2)} GB`;
+
+  if (data.cpu_sustained) {
+    $("cpuProtectionState").textContent = "Shutdown active";
+    setResourceAlert("cpuSafetyAlert", "danger", `CPU stayed at or above ${cpuLimit.toFixed(0)}% for ${requiredSamples} samples. Managed workers are stopping.`);
+  } else if (data.safety_source === "recovery") {
+    $("cpuProtectionState").textContent = "Recovery lock";
+    setResourceAlert("cpuSafetyAlert", "warning", "CPU and RAM must recover past their safety margins before worker starts unlock.");
+  } else if (cpu >= cpuLimit) {
+    $("cpuProtectionState").textContent = "Monitoring high load";
+    setResourceAlert("cpuSafetyAlert", "warning", `CPU is ${cpu.toFixed(1)}%. Protection activates after ${requiredSamples} consecutive high samples.`);
+  } else {
+    $("cpuProtectionState").textContent = "Normal";
+    setResourceAlert("cpuSafetyAlert", "safe", `CPU is ${cpu.toFixed(1)}%. Sustained-load protection is ready.`);
+  }
+
+  if (ram >= ramShutdown) {
+    setResourceAlert("ramSafetyAlert", "danger", `RAM is ${ram.toFixed(1)}%. Managed workers are stopping at the ${ramShutdown.toFixed(0)}% shutdown threshold.`);
+  } else if (data.safety_source === "recovery") {
+    setResourceAlert("ramSafetyAlert", "warning", "Safety recovery lock is active. RAM and CPU must clear their hysteresis margins.");
+  } else if (ram >= ramStart) {
+    setResourceAlert("ramSafetyAlert", "warning", `RAM is ${ram.toFixed(1)}%. New worker starts are blocked at ${ramStart.toFixed(0)}%.`);
+  } else if (available < minimumAvailable) {
+    setResourceAlert("ramSafetyAlert", "warning", `Only ${available.toFixed(2)} GB RAM is available. Starts require at least ${minimumAvailable.toFixed(1)} GB.`);
+  } else {
+    setResourceAlert("ramSafetyAlert", "safe", `RAM is ${ram.toFixed(1)}% with ${available.toFixed(2)} GB available. Worker starts are permitted by memory limits.`);
+  }
+}
+
 function renderMetrics(data) {
   latestMetrics = data;
   $("cpuMetric").textContent = data.cpu_percent.toFixed(1);
@@ -80,7 +133,7 @@ function renderMetrics(data) {
   $("cpuBar").style.width = `${data.cpu_percent}%`;
   $("completedMetric").textContent = data.completed_tests;
   $("uptimeMetric").textContent = formatDuration(data.uptime_seconds);
-  $("alerts").innerHTML = data.alerts.map(a => `<div class="alert ${a.level}">${escapeHtml(a.message)}</div>`).join("");
+  renderResourceSafety(data);
   const label = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   addPoint(charts.cpu, label, data.cpu_percent); addPoint(charts.ram, label, data.ram_percent);
   updateControls();

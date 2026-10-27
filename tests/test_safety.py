@@ -43,5 +43,7 @@ def test_sustained_cpu_protection_stops_workers(client, fake_metrics):
         payload = client.get("/api/metrics").json()
 
     assert payload["cpu_sustained"] is True
+    assert payload["cpu_high_samples"] == payload["thresholds"]["cpu_samples"]
+    assert payload["safety_source"] == "cpu"
     assert payload["active_workers"] == 0
     assert payload["safety_shutdown"] is True
