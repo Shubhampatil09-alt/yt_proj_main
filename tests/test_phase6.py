@@ -69,8 +69,8 @@ def test_dashboard_contains_complete_selection_and_diagnostic_workflow(tmp_path)
     assert page.status_code == 200
     for label in ("Search Channel", "Select Video", "Run Diagnostic", "View Results"):
         assert label in page.text
-    assert "/static/css/dashboard.css?v=6.0.7" in page.text
-    assert "/static/js/dashboard.js?v=6.0.7" in page.text
+    assert "/static/css/dashboard.css?v=6.0.11" in page.text
+    assert "/static/js/dashboard.js?v=6.0.11" in page.text
     for element_id in (
         'id="selectedVideo"', 'id="changeVideo"', 'id="startDiagnostic"',
         'id="diagnosticReason"', 'id="diagnosticResults"', 'id="loadMoreVideos"',
@@ -85,6 +85,17 @@ def test_dashboard_contains_complete_selection_and_diagnostic_workflow(tmp_path)
     assert "eligibility.reason" in script
     assert 'document.addEventListener("visibilitychange"' in script
     assert "refreshInFlight" in script
+    assert '"Warning"' in script
+    assert '"Instruction"' in script
+
+    styles = (Path(__file__).parents[1] / "static" / "css" / "dashboard.css").read_text(
+        encoding="utf-8"
+    )
+    assert "grid-template-columns: repeat(3,minmax(0,1fr))" in styles
+    assert ".diagnostic-cta > button" in styles
+    assert ".metric-card { min-height: 68px" in styles
+    assert ".metric-label { margin-bottom: 3px; color: #9ca7bc; font-size: 12px" in styles
+    assert ".metric-card small { display: block; margin-top: 4px; color: #96a1b5; font-size: 11px" in styles
 
 
 def test_resource_guardrails_are_rendered_in_cpu_and_ram_panels(tmp_path):

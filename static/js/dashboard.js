@@ -232,7 +232,7 @@ function renderYoutube(data) {
 function renderSelection(selection) {
   if (!selection) {
     $("selectedVideoDetails").innerHTML = '<div class="empty-state compact">No target video selected.</div>';
-    $("selectionToolbar").classList.add("hidden");
+    $("changeVideo").classList.add("hidden");
     $("discoveryArea").classList.remove("collapsed");
     return;
   }
@@ -246,7 +246,7 @@ function renderSelection(selection) {
       <a class="video-url" href="${escapeHtml(selection.video_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(selection.video_url)}</a>
       <div class="selection-stats"><span>${compactNumber(stats.viewCount)} views</span><span>${compactNumber(stats.likeCount)} likes</span><span>${compactNumber(stats.commentCount)} comments</span></div>
     </div></div>`;
-  $("selectionToolbar").classList.remove("hidden");
+  $("changeVideo").classList.remove("hidden");
   if (!changingVideo) $("discoveryArea").classList.add("collapsed");
 }
 
@@ -388,10 +388,20 @@ function updateControls() {
     ? `Diagnostic ${latestYoutube.diagnostic.status}`
     : "Watch Selected Video";
   startButton.title = !diagnosticBlocked ? "Play the selected video once" : diagnosticReason;
-  $("diagnosticReason").textContent = !diagnosticBlocked
-    ? "Ready. Plays once until the video ends, you press Stop, or a safety limit is reached."
+  const reasonElement = $("diagnosticReason");
+  const reasonPrefix = !diagnosticBlocked
+    ? "Ready"
+    : !latestYoutube.selection
+      ? "Instruction"
+      : (globalBusy || diagnosticActive)
+        ? "Status"
+        : "Warning";
+  const reasonMessage = !diagnosticBlocked
+    ? "Plays once until the video ends, you press Stop, or a safety limit is reached."
     : diagnosticReason;
-  $("diagnosticReason").classList.toggle("ready", !diagnosticBlocked);
+  reasonElement.textContent = `${reasonPrefix}: ${reasonMessage}`;
+  reasonElement.classList.toggle("ready", reasonPrefix === "Ready");
+  reasonElement.classList.toggle("status", reasonPrefix === "Status");
   stopButton.disabled = globalBusy || !diagnosticActive || latestYoutube.diagnostic?.status === "Stopping";
   stopButton.title = diagnosticActive ? "Stop the active diagnostic" : "No diagnostic is currently active.";
 }

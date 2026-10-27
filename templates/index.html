@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bot Control Center</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=6.0.7">
-  <script src="{{ url_for('static', path='/js/chart.umd.min.js') }}?v=6.0.7" defer></script>
-  <script src="{{ url_for('static', path='/js/dashboard.js') }}?v=6.0.7" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=6.0.11">
+  <script src="{{ url_for('static', path='/js/chart.umd.min.js') }}?v=6.0.11" defer></script>
+  <script src="{{ url_for('static', path='/js/dashboard.js') }}?v=6.0.11" defer></script>
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -97,11 +97,9 @@
         <div class="diagnostic-cta">
           <button class="run-diagnostic" id="startDiagnostic">Watch Selected Video</button>
           <button class="action-button stop" id="stopDiagnostic">Stop</button>
-          <p class="disabled-reason" id="diagnosticReason" role="status" aria-live="polite">Select and save a video first.</p>
+          <button class="action-button change hidden" type="button" id="changeVideo">Change Video</button>
+          <p class="disabled-reason" id="diagnosticReason" role="status" aria-live="polite">Instruction: Select and save a video first.</p>
         </div>
-      </div>
-      <div class="selection-toolbar hidden" id="selectionToolbar">
-        <button class="text-button" type="button" id="changeVideo">Change Video</button>
       </div>
       <div class="diagnostic-live" id="diagnosticLive">
         <div><span>State</span><strong id="diagnosticState">Idle</strong></div>

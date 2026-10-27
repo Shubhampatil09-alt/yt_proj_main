@@ -235,7 +235,7 @@ class JobHistory:
     def list_bot_profiles(self) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute(
-                "SELECT * FROM bot_profiles ORDER BY created_at, bot_id"
+                "SELECT * FROM bot_profiles ORDER BY created_at, rowid"
             ).fetchall()
         return [self._decode_profile(row) for row in rows]
 
