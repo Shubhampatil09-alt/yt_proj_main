@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bot Control Center</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=6.0.5">
-  <script src="{{ url_for('static', path='/js/chart.umd.min.js') }}?v=6.0.5" defer></script>
-  <script src="{{ url_for('static', path='/js/dashboard.js') }}?v=6.0.5" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', path='/css/dashboard.css') }}?v=6.0.6">
+  <script src="{{ url_for('static', path='/js/chart.umd.min.js') }}?v=6.0.6" defer></script>
+  <script src="{{ url_for('static', path='/js/dashboard.js') }}?v=6.0.6" defer></script>
 </head>
 <body>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
@@ -102,6 +102,7 @@
             <button class="text-button" id="increaseLimit">Increase limit</button>
           </div>
         </div>
+        <div class="alert safe" id="botCapacity" role="status">Checking memory capacity...</div>
         <div class="bot-list" id="botList"></div>
         <div class="empty-state hidden" id="workerEmpty">No saved bots. Add one to begin.</div>
       </article>

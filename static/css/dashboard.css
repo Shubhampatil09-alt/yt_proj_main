@@ -239,3 +239,4 @@ dialog input:focus { border-color: var(--blue); }
 .playback-mode { display: flex; flex-wrap: wrap; gap: 16px; border: 0; padding: 8px 0; margin: 0 0 8px; }
 .playback-mode label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .playback-mode input { accent-color: var(--accent, #62a8ff); }
+#botCapacity { margin-top: 14px; }

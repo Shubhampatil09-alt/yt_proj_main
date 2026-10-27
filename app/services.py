@@ -116,6 +116,7 @@ class DashboardService:
         youtube_state = self.youtube_diagnostic.snapshot() if self.youtube_diagnostic else None
         youtube_process = (youtube_state or {}).get("process", {})
         youtube_memory = float(youtube_process.get("memory_mb", 0))
+        self.workers.record_external_memory(youtube_memory)
         chrome_memory += float(youtube_process.get("chrome_memory_mb", 0))
         driver_memory += float(youtube_process.get("chromedriver_memory_mb", 0))
         worker_memory = chrome_memory + driver_memory

@@ -69,8 +69,8 @@ def test_dashboard_contains_complete_selection_and_diagnostic_workflow(tmp_path)
     assert page.status_code == 200
     for label in ("Search Channel", "Select Video", "Run Diagnostic", "View Results"):
         assert label in page.text
-    assert "/static/css/dashboard.css?v=6.0.5" in page.text
-    assert "/static/js/dashboard.js?v=6.0.5" in page.text
+    assert "/static/css/dashboard.css?v=6.0.6" in page.text
+    assert "/static/js/dashboard.js?v=6.0.6" in page.text
     for element_id in (
         'id="selectedVideo"', 'id="changeVideo"', 'id="startDiagnostic"',
         'id="diagnosticReason"', 'id="diagnosticResults"', 'id="loadMoreVideos"',

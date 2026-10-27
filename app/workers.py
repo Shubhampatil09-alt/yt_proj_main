@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import math
 import time
 import uuid
 from threading import RLock
@@ -9,7 +10,7 @@ from typing import Callable, Protocol
 import psutil
 
 from .youtube_worker import YouTubeWorker
-from .config import MAX_WORKERS, MIN_AVAILABLE_RAM_GB, RAM_START_BLOCK_PERCENT
+from .config import BOT_RAM_ESTIMATE_MB, MAX_WORKERS, MIN_AVAILABLE_RAM_GB, RAM_START_BLOCK_PERCENT
 from .database import JobHistory
 from .workers_model import WorkerStatus, utc_time
 
@@ -46,6 +47,8 @@ class WorkerManager:
         self._logs: list[dict[str, str]] = []
         self._safety_reason: str | None = None
         self._safety_latched = False
+        self._ram_estimate_mb = BOT_RAM_ESTIMATE_MB
+        self._external_memory_mb = 0.0
         self._lock = RLock()
         self._log_unlocked("info", f"Manager ready; maximum concurrency is {self.max_workers}.")
 
@@ -277,6 +280,12 @@ class WorkerManager:
                 }
             return {"allowed": True, "reason": "Resources permit one diagnostic browser."}
 
+    def record_external_memory(self, memory_mb: float) -> None:
+        """Called by the resource monitor so diagnostic RAM is known without nested locks."""
+        with self._lock:
+            self._external_memory_mb = max(0.0, float(memory_mb or 0.0))
+            self._observe_memory_unlocked(self._external_memory_mb)
+
     def release_external_slot(self, slot_id: str) -> None:
         with self._lock:
             if slot_id in self._external_slots:
@@ -347,6 +356,58 @@ class WorkerManager:
             raise ValueError(f"Worker start blocked: RAM is {ram:.1f}% (limit {RAM_START_BLOCK_PERCENT:.0f}%).")
         if available < MIN_AVAILABLE_RAM_GB:
             raise ValueError(f"Worker start blocked: {available:.2f} GB RAM is available; at least {MIN_AVAILABLE_RAM_GB:.2f} GB is required.")
+        if self._memory_capacity_unlocked() < 1:
+            raise ValueError(
+                f"Memory limit reached: another bot needs about {self._ram_estimate_mb:.0f} MB, which would "
+                f"exceed the {RAM_START_BLOCK_PERCENT:.0f}% RAM limit or leave less than "
+                f"{MIN_AVAILABLE_RAM_GB:.2f} GB free. Can't start more bots."
+            )
+
+    def _observe_memory_unlocked(self, memory_mb: float) -> None:
+        # The estimate only grows: Chrome's footprint rises during playback, so the peak is the safe value.
+        if memory_mb > self._ram_estimate_mb:
+            self._ram_estimate_mb = memory_mb
+
+    def _memory_capacity_unlocked(self) -> int:
+        """How many more bots fit before the start-block RAM limit or the free-RAM floor."""
+        memory = self.metrics_provider.virtual_memory()
+        total_mb = float(memory.total) / 1024**2
+        available_mb = float(memory.available) / 1024**2
+        estimate = self._ram_estimate_mb
+        # Browsers that are still starting have not allocated their full footprint yet.
+        pending = 0.0
+        for worker in self._current.values():
+            if worker.status in WorkerStatus.active():
+                used = float(worker.snapshot().get("process", {}).get("memory_mb", 0.0) or 0.0)
+                pending += max(0.0, estimate - used)
+        if self._external_slots:
+            pending += max(0.0, estimate - self._external_memory_mb)
+        headroom_percent = total_mb * RAM_START_BLOCK_PERCENT / 100 - (total_mb - available_mb + pending)
+        headroom_available = available_mb - pending - MIN_AVAILABLE_RAM_GB * 1024
+        # Projected RAM must stay strictly below the start limit; the free-RAM floor may be met exactly.
+        by_percent = math.ceil(headroom_percent / estimate) - 1
+        by_available = math.floor(headroom_available / estimate)
+        return max(0, min(by_percent, by_available))
+
+    def _capacity_unlocked(self) -> dict:
+        memory_bots = self._memory_capacity_unlocked()
+        active = self._active_browser_count_unlocked()
+        slots = max(0, self.max_workers - active)
+        if self._worker_factory is None and active:
+            slots = 0
+        more_bots = min(memory_bots, slots)
+        if self._safety_reason or self._safety_latched:
+            message = self._safety_reason or "Worker starts remain locked until resources recover."
+        elif memory_bots < 1:
+            message = "Memory limit reached - can't start more bots."
+        elif more_bots < 1:
+            message = ("Only one selected-video bot can run at a time." if self._worker_factory is None
+                       else f"Concurrency limit of {self.max_workers} reached.")
+        else:
+            message = f"You can run about {more_bots} more bot{'s' if more_bots != 1 else ''}."
+        return {"memory_bots": memory_bots, "more_bots": more_bots,
+                "estimate_mb": round(self._ram_estimate_mb, 1),
+                "memory_limited": memory_bots < 1, "message": message}
 
     def _profile_unlocked(self, bot_id: str) -> dict:
         profile = self.history.get_bot_profile(bot_id)
@@ -380,6 +441,7 @@ class WorkerManager:
         run = worker.snapshot() if worker else None
         last_run = self.history.last_run_for_bot(bot_id)
         process = (run or {}).get("process", {"driver_pid": None, "pids": [], "memory_mb": 0.0})
+        self._observe_memory_unlocked(float(process.get("memory_mb", 0.0) or 0.0))
         return {**profile, "status": status.value, "worker_id": worker.id if worker else None,
                 "video_id": (run or {}).get("video_id"),
                 "video_title": (run or {}).get("video_title"),
@@ -410,6 +472,7 @@ class WorkerManager:
                 "external_active": len(self._external_slots),
                 "safety_locked": self._safety_reason is not None or self._safety_latched,
                 "safety_reason": self._safety_reason, "bots": bots,
+                "capacity": self._capacity_unlocked(),
                 "workers": list(reversed(workers))}
 
     def _log_unlocked(self, level: str, message: str) -> None:

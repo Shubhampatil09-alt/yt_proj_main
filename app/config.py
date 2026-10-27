@@ -31,6 +31,8 @@ RAM_SHUTDOWN_PERCENT = float(os.getenv("PLAYBACK_RAM_SHUTDOWN_PERCENT", "95"))
 MIN_AVAILABLE_RAM_GB = float(os.getenv("PLAYBACK_MIN_AVAILABLE_RAM_GB", "1.0"))
 SAFETY_HYSTERESIS_PERCENT = float(os.getenv("PLAYBACK_SAFETY_HYSTERESIS_PERCENT", "5"))
 AVAILABLE_RAM_HYSTERESIS_GB = float(os.getenv("PLAYBACK_AVAILABLE_HYSTERESIS_GB", "0.25"))
+# Starting RAM estimate per bot (Chrome + ChromeDriver); raised to the observed peak at runtime.
+BOT_RAM_ESTIMATE_MB = max(1.0, float(os.getenv("PLAYBACK_BOT_RAM_ESTIMATE_MB", "740")))
 CPU_SUSTAINED_PERCENT = float(os.getenv("PLAYBACK_CPU_LIMIT_PERCENT", "90"))
 CPU_SUSTAINED_SAMPLES = max(1, int(os.getenv("PLAYBACK_CPU_SAMPLES", "5")))
 METRIC_INTERVAL_SECONDS = 2

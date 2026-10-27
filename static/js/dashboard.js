@@ -90,7 +90,8 @@ function botCard(bot) {
   const progress = Math.max(0, Math.min(100, Number(bot.progress_percent || 0)));
   const isBusy = busyBots.has(bot.bot_id);
   const active = activeStates.has(bot.status);
-  const canStart = !active && !latestMetrics.start_blocked;
+  const memoryFull = Boolean(latestBots.capacity?.memory_limited);
+  const canStart = !active && !latestMetrics.start_blocked && !memoryFull;
   const canStop = active && bot.status !== "Stopping";
   const canRemove = bot.status === "Stopped";
   const error = bot.last_error ? `<div class="bot-error" title="${escapeHtml(bot.last_error)}">${escapeHtml(bot.last_error)}</div>` : "";
@@ -126,6 +127,9 @@ function renderBots(data) {
   $("stoppedBots").textContent = data.stopped_bots;
   $("failedBots").textContent = data.failed_bots;
   $("workerPill").textContent = `${data.count} / ${data.max_workers} active`;
+  const capacity = data.capacity || { more_bots: 0, memory_limited: false, message: "Checking memory capacity..." };
+  $("botCapacity").textContent = `${capacity.message}${capacity.estimate_mb ? ` (about ${Math.round(capacity.estimate_mb)} MB per bot)` : ""}`;
+  $("botCapacity").className = `alert ${capacity.memory_limited ? "danger" : capacity.more_bots > 0 ? "safe" : "warning"}`;
   $("workerEmpty").classList.toggle("hidden", data.bots.length !== 0);
   $("botList").innerHTML = data.bots.map(botCard).join("");
   document.querySelectorAll("[data-bot-mode]").forEach(input => input.addEventListener("change", async () => {
@@ -308,7 +312,7 @@ function changeVideo() {
 }
 
 function updateControls() {
-  const blocked = latestMetrics.start_blocked || globalBusy;
+  const blocked = latestMetrics.start_blocked || globalBusy || Boolean(latestBots.capacity?.memory_limited);
   $("addBot").disabled = globalBusy;
   $("startAll").disabled = blocked || latestBots.count >= latestBots.max_workers || latestBots.total_saved === 0;
   $("stopAll").disabled = globalBusy || latestBots.count === 0;
